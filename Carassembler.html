@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html>
+<link rel="stylesheet" type="text/css" href="style2.css">
+<head>
+	<meta http-equiv="refresh" content="60" />
+</head>
+<body onload="onPageLoad();">
+
+	<table id="table">
+		<tr>
+			<th><center>
+				<h1><span id="Heading"></span></h1>
+				<p><span id="bodyStyle"></span></p>
+				<p><span id="bodyColor"></span></p>
+				<p><span id="engine"></span></p>
+				<p><span id="wheelStyle"></span></p>
+				<p><span id="wheelColor"></span></p>
+			</center></th>
+		</tr>
+	</table>
+
+	<center><button type="button" id="assembler" style="display:none;" onclick="buildCar()">Let's assemble a car!</button></center>
+
+	<script type="text/javascript">
+		var AssemblyStatus = new Object();
+		var bodyStyle = "";
+		var bodyColor = "";
+		var wheelStyle = "";
+		var wheelColor = "";
+		var engine = "";
+		function onPageLoad(){
+			var req = new XMLHttpRequest();
+			req.open("GET", "server/moc/Inventory.php?get");
+			req.send();
+			req.onreadystatechange=function()
+			{
+				if(req.status == 200 && req.readyState == 4)
+				{
+					document.getElementById("assembler").style="display:visible";
+					var JSONStrings = req.responseText;
+					var newAssemblyStatus = JSON.parse(JSONStrings);
+					AssemblyStatus.orderID = newAssemblyStatus.orderID;
+					AssemblyStatus.readyParts = newAssemblyStatus.readyParts;
+					AssemblyStatus.readyToAssemble = newAssemblyStatus.readyToAssemble;
+					if(AssemblyStatus.readyToAssemble == true)
+					{
+						for(var i = 0;i < AssemblyStatus.readyParts.length; i++){
+							if(AssemblyStatus.readyParts[i].type == 1 || AssemblyStatus.readyParts[i].type == 2 || AssemblyStatus.readyParts[i].type == 3 )
+							{
+								switch(AssemblyStatus.readyParts[i].type)
+								{
+									case 1:
+									switch(AssemblyStatus.readyParts[i].option)
+									{
+										case "1":
+										bodyStyle = "Fiesta";
+										break;
+										case "2":
+										bodyStyle = "Fusion";
+										break;
+										case "3":
+										bodyStyle = "Mustang";
+										break;
+									}
+									switch(AssemblyStatus.readyParts[i].color)
+									{
+										case "1":
+										bodyColor = "Blue";
+										break;
+										case "2":
+										bodyColor = "Red";
+										break;
+										case "3":
+										bodyColor = "Gold";
+										break;
+									}
+									break;
+									case 2:
+									switch(AssemblyStatus.readyParts[i].option)
+									{
+										case "1":
+										engine = "150";
+										break;
+										case "2":
+										engine = "250";
+										break;
+										case "3":
+										engine = "400";
+										break;
+									}
+									break;
+									case 3:
+									switch(AssemblyStatus.readyParts[i].option)
+									{
+										case "1":
+										wheelStyle = "A";
+										break;
+										case "2":
+										wheelStyle = "B";
+										break;
+										case "3":
+										wheelStyle = "C";
+										break;
+									}
+									switch(AssemblyStatus.readyParts[i].color)
+									{
+										case "1":
+										wheelColor = "Blue";
+										break;
+										case "2":
+										wheelColor = "Red";
+										break;
+										case "3":
+										wheelColor = "Gold";
+										break;
+									}
+								}
+							}
+						}
+
+						document.getElementById("Heading").innerHTML = "Parts Ready:";
+						document.getElementById("bodyStyle").innerHTML = "Body Style: " + bodyStyle;
+						document.getElementById("bodyColor").innerHTML = "Body Color: " + bodyColor;
+						document.getElementById("engine").innerHTML = "Engine: " + engine;
+						document.getElementById("wheelStyle").innerHTML = "Wheel Style: " +wheelStyle;
+						document.getElementById("wheelColor").innerHTML = "Wheel Color:" + wheelColor;
+
+						document.getElementById("bodyStyle").style.display = '';
+						document.getElementById("bodyColor").style.display = '';
+						document.getElementById("engine").style.display = '';
+						document.getElementById("wheelStyle").style.display = '';
+						document.getElementById("wheelColor").style.display = '';
+					}
+					else if(AssemblyStatus.readyToAssemble == false)
+					{
+						document.getElementById("Heading").innerHTML = "No Parts Ready";
+						document.getElementById("bodyStyle").style.display = 'none';
+						document.getElementById("bodyColor").style.display = 'none';
+						document.getElementById("engine").style.display = 'none';
+						document.getElementById("wheelStyle").style.display = 'none';
+						document.getElementById("wheelColor").style.display = 'none';
+						//onPageLoad();
+				// check the status again
+			}
+		}
+	}
+}
+
+function buildCar()
+{
+	if(AssemblyStatus.orderID != -1){
+		var requestBuildCar = new XMLHttpRequest();
+		requestBuildCar.open("DELETE", "server/moc/Inventory.php?delete="+JSON.stringify(AssemblyStatus.orderID));
+		requestBuildCar.send();
+		requestBuildCar.onreadystatechange=function()
+		{
+			if(requestBuildCar.status == 200 && requestBuildCar.readyState == 4)
+			{
+				var JSONString = requestBuildCar.responseText;
+				
+				//var JSONObject = JSON.parse(JSONString);
+				// Output the produced car to the manufactoring page list.
+				
+				// Call onpageload
+				onPageLoad();
+			}
+		}
+	}
+}
+
+</script>
+
+
+</body>
+</html>

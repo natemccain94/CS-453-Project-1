@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html>
+<head>
+<link rel="stylesheet" type="text/css" href="style.css">
+<h1><center>My Own Car</center></h1>
+</head>
+<body onload="onPageLoad();">
+
+
+<table>
+	<tr>
+		<th>
+			<h>Select engine type:</h>
+
+		</th>
+		<th>
+			<h>Select body style:</h>
+		</th>
+		<th>
+			<h>Select body color:</h>
+		</th>
+	</tr>
+	<tr>
+		<th>
+			<form >
+				<label><input type="radio" name = "engineType" value=1 checked> 150</label><br>
+				<label><input type="radio" name = "engineType" value=2> 250</label><br>
+				<label><input type="radio" name = "engineType" value=3> 400</label><br>
+			</form>
+		</th>
+		<th>
+			<form >
+				<label><input type="radio" name = "carBodyStyle" value=1 checked> Fiesta</label><br>
+				<label><input type="radio" name = "carBodyStyle" value=2> Fusion</label><br>
+				<label><input type="radio" name = "carBodyStyle" value=3> Mustang</label><br>
+			</form>
+		</th>
+		<th>
+			<form >
+				<label><input type="radio" name = "carBodyColor" value=1 checked> Blue</label><br>
+				<label><input type="radio" name = "carBodyColor" value=2> Red</label><br>
+				<label><input type="radio" name = "carBodyColor" value=3> Gold</label><br>
+			</form>
+		</th>
+	</tr>
+	<tr>
+		<th colspan="3">
+			<h>Select Wheel Style:</h>
+		</th>
+	</tr>
+	<tr>
+			<form >
+			<th>
+				<label><input type="radio" name = "wheelStyle" value=1 checked> A
+				<img src="wheelA.png" alt="wheel style A"></label>
+			</th>
+			<th>
+				<label><input type="radio" name = "wheelStyle" value=2> B
+				<img src="wheelB.png" alt="wheel style B"></label>
+			</th>
+			<th>
+				<label><input type="radio" name = "wheelStyle" value=3> C
+				<img src="wheelC.png" alt="wheel style C"></label>
+			</th>
+			</form>
+	</tr>
+	<tr>
+		<th colspan="3">
+			<h>Select wheel color:</h>
+		</th>
+	</tr>
+	<tr>
+		<th colspan="3">
+			<form >
+				<label><input type="radio" name = "wheelColor" value=1 checked> Blue</label><br>
+				<label><input type="radio" name = "wheelColor" value=2> Red</label><br>
+				<label><input type="radio" name = "wheelColor" value=3> Gold</label><br>
+			</form>
+		</th>
+	</tr>
+</table>
+<p></p>
+<p></p>
+<center><input id="clickme" type="button" value="Submit" style="visibility:hidden;" onclick="placeOrder();"/></center>
+<p></p>
+<p><center><spand id="Error"></spand></center></p>
+
+
+<script type="text/javascript">
+
+var timer;
+
+function onPageLoad(){
+	clearTimeout(timer);
+	var req = new XMLHttpRequest();
+	req.open("GET", "server/moc/Orders.php?get");
+	req.setRequestHeader('ContentType', 'text/json');
+	req.send();
+	req.onreadystatechange=function()
+	{
+		if(req.status == 200 && req.readyState == 4)
+		{
+			document.getElementById("Error").style.display = 'none';
+			document.getElementById("clickme").style.visibility="visible";
+		}
+		else if(req.status == 503)
+		{
+			document.getElementById("Error").innerHTML = "Queue is full";
+			document.getElementById("Error").style.display = '';
+			document.getElementById("clickme").style.visibility="hidden";
+			timer = setTimeout(onPageLoad, 10000);
+		}
+	}
+}
+
+
+function placeOrder()
+{
+	document.getElementById("clickme").style.visibility="hidden";
+	var req = new XMLHttpRequest();
+	req.open("GET", "server/moc/Orders.php?get");
+	req.setRequestHeader('ContentType', 'text/json');
+	req.send();
+	req.onreadystatechange=function()
+	{
+		if(req.status == 200 && req.readyState == 4)
+		{
+			postOrder();
+		}else if(req.status == 503)
+		{
+			document.getElementById("Error").innerHTML = "Queue is full. Order did not go through.";
+			document.getElementById("Error").style.display = '';
+			document.getElementById("clickme").style.visibility="hidden";
+		}
+	}
+}
+
+
+function postOrder()
+{
+	// Collect the order specifications.
+	var bodyStyle = document.querySelector('input[name="carBodyStyle"]:checked').value;
+	var bodyColor = document.querySelector('input[name="carBodyColor"]:checked').value;
+	var wheelStyle = document.querySelector('input[name="wheelStyle"]:checked').value;
+	var wheelColor = document.querySelector('input[name="wheelColor"]:checked').value;
+	var engine = document.querySelector('input[name="engineType"]:checked').value;
+	var req = new XMLHttpRequest();
+	var carObject = new Object();
+	var wheelObject = new Object();
+	req.open("POST", "server/moc/Orders.php?post");
+	req.setRequestHeader('ContentType', 'text/json');
+	req.send();
+	req.onreadystatechange=function()
+	{
+		if(req.status == 200 && req.readyState == 4)
+		{
+			var JSONString = req.responseText;
+			document.getElementById("Error").innerHTML = req.responseText;
+			var JSONObject = JSON.parse(JSONString);
+			var id = JSONObject.id;
+			orderCarBody(bodyStyle, bodyColor, id);
+			// Order the wheel set
+			orderWheelSet(wheelStyle, wheelColor, id);
+			// Order the engine
+			orderEngine(engine, id);
+			onPageLoad();
+		}else if(req.stats == 503)
+		{
+			document.getElementById("Error").innerHTML = "Queue is full";
+			document.getElementById("Error").style.display = '';
+			document.getElementById("clickme").style.visibility="hidden";
+		}
+	}
+}
+
+function orderCarBody(bodyStyle, requestedColor, id)
+{
+	var JSONObject = new Object();
+	JSONObject.part = 1;
+	JSONObject.option = bodyStyle;
+	JSONObject.orderID = id;
+	requestCarBody = new XMLHttpRequest();
+	requestCarBody.open("POST","server/vendors/ChattanoogaBodies.php?post="+JSON.stringify(JSONObject), true);
+	//requestCarBody.setRequestHeader('ContentType', 'text/json');
+	requestCarBody.send();
+	requestCarBody.onreadystatechange=function()
+	{
+		if(requestCarBody.status == 200 && requestCarBody.readyState == 4)
+		{
+			var JSONString = requestCarBody.responseText;
+			var JSONObject = JSON.parse(JSONString);
+			sendToPainter(JSONObject, requestedColor);
+		}
+	}
+}
+
+function orderWheelSet(wheelStyle, requestedColor, id)
+{
+	var JSONObject = new Object();
+	JSONObject.part = 3;
+	JSONObject.option = wheelStyle;
+	JSONObject.orderID = id;
+	requestWheelSet = new XMLHttpRequest();
+	requestWheelSet.open("POST","server/vendors/GadsdenWheels.php?post="+JSON.stringify(JSONObject), true);
+	//requestWheelSet.setRequestHeader('ContentType', 'text/json');
+	requestWheelSet.send();
+	requestWheelSet.onreadystatechange=function()
+	{
+		if(requestWheelSet.status == 200 && requestWheelSet.readyState == 4)
+		{
+			var JSONString = requestWheelSet.responseText;
+			var JSONObject = JSON.parse(JSONString);
+			sendToPainter(JSONObject, requestedColor);
+		}
+	}
+}
+
+function orderEngine(engineType, id)
+{
+	var JSONObject = new Object();
+	JSONObject.part = 2;
+	JSONObject.option = engineType;
+	JSONObject.orderID = id;
+	requestEngine = new XMLHttpRequest();
+	requestEngine.open("POST","server/vendors/NashvilleEngines.php?post="+JSON.stringify(JSONObject), true);
+	//requestWheelSet.setRequestHeader('ContentType', 'text/json');
+	requestEngine.send();
+	requestEngine.onreadystatechange=function()
+	{
+		if (requestEngine.readyState == 4 && requestEngine.status == 200)
+		{
+			var JSONString = requestEngine.responseText;
+			var JSONObject = JSON.parse(JSONString);
+			sendToInventory(JSONObject);
+		}
+	}
+}
+
+function sendToPainter(JSONObject, requestedColor)
+{
+	var paintOrder = new Object();
+	paintOrder.part = JSONObject;
+	paintOrder.color = requestedColor;
+	requestPainter = new XMLHttpRequest();
+	requestPainter.open("POST", "server/vendors/OwensPainters.php?post="+JSON.stringify(paintOrder), true);
+	requestPainter.send();
+	requestPainter.onreadystatechange = function()
+	{
+		if(requestPainter.readyState == 4 && requestPainter.status == 200)
+		{
+			var JSONString = requestPainter.responseText;
+			var JSONObject = JSON.parse(JSONString);
+			sendToInventory(JSONObject);
+		}
+	}
+}
+
+function sendToInventory(JSONObject)
+{
+	req = new XMLHttpRequest();
+	req.open("POST", "server/moc/Inventory.php?post="+JSON.stringify(JSONObject), true);
+	req.send();
+	req.onreadystatechange = function()
+	{
+		if(req.readyState == 4 && req.status == 200)
+		{
+
+		}
+		else if(req.status == 400)
+		{
+		}
+	}
+
+}
+
+</script>
+
+</body>
+</html>
