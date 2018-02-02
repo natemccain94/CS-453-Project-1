@@ -264,10 +264,12 @@ function sendToInventory(JSONObject)
 	{
 		if(req.readyState == 4 && req.status == 200)
 		{
-
+			// Do nothing. postOrder() will check to see if we have room in the inventory for
+			// another order.
 		}
 		else if(req.status == 400)
 		{
+			document.getElementById("Error").innerHTML = "Error: sendToInventory "+req.status;
 		}
 	}
 
